@@ -44,5 +44,4 @@ public class JUnitTestClassProcessor extends AbstractJUnitTestClassProcessor<JUn
         JUnitTestEventAdapter junitEventAdapter = new JUnitTestEventAdapter(threadSafeResultProcessor, clock, idGenerator);
         return new JUnitTestClassExecutor(Thread.currentThread().getContextClassLoader(), spec, junitEventAdapter, threadSafeTestClassListener);
     }
-
 }

@@ -175,6 +175,18 @@ class TestEventSerializerTest extends SerializerSpec {
         result.cause.message == "cause"
     }
 
+    def "serializes TestFailure"() {
+        def rawFailure = new RuntimeException("cause");
+        def failure = new DefaultTestFailure(rawFailure, true)
+
+        when:
+        def result = serialize(failure, TestFailure)
+
+        then:
+        result.rawFailure.message == "cause"
+        result.isAssertionFailure == true
+    }
+
     Object serialize(Object source, Class type = source.getClass()) {
         return super.serialize(source, serializer.build(type))
     }

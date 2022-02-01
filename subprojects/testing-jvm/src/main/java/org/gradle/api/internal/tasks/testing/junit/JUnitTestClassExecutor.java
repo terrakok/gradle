@@ -16,13 +16,11 @@
 
 package org.gradle.api.internal.tasks.testing.junit;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
+import org.gradle.api.internal.tasks.testing.DefaultTestFailure;
 import org.gradle.api.internal.tasks.testing.filter.TestSelectionMatcher;
+import org.gradle.api.tasks.testing.TestFailure;
 import org.gradle.internal.concurrent.ThreadSafe;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.Description;
@@ -34,6 +32,10 @@ import org.junit.runner.manipulation.Filterable;
 import org.junit.runner.manipulation.NoTestsRemainException;
 import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 public class JUnitTestClassExecutor implements Action<String> {
     private final ClassLoader applicationClassLoader;
@@ -60,7 +62,8 @@ public class JUnitTestClassExecutor implements Action<String> {
             failure = throwable;
         }
 
-        executionListener.testClassFinished(failure);
+        TestFailure testFailure = new DefaultTestFailure(failure, false);
+        executionListener.testClassFinished(testFailure);
     }
 
     private void runTestClass(String testClassName) throws ClassNotFoundException {

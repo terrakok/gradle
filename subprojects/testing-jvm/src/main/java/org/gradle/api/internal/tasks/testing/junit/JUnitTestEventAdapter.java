@@ -17,10 +17,12 @@
 package org.gradle.api.internal.tasks.testing.junit;
 
 import org.gradle.api.internal.tasks.testing.DefaultTestDescriptor;
+import org.gradle.api.internal.tasks.testing.DefaultTestFailure;
 import org.gradle.api.internal.tasks.testing.TestCompleteEvent;
 import org.gradle.api.internal.tasks.testing.TestDescriptorInternal;
 import org.gradle.api.internal.tasks.testing.TestResultProcessor;
 import org.gradle.api.internal.tasks.testing.TestStartEvent;
+import org.gradle.api.tasks.testing.TestFailure;
 import org.gradle.api.tasks.testing.TestResult;
 import org.gradle.internal.id.IdGenerator;
 import org.gradle.internal.time.Clock;
@@ -74,7 +76,8 @@ public class JUnitTestEventAdapter extends RunListener {
             testInternal = descriptor;
             resultProcessor.started(testInternal, startEvent());
         }
-        resultProcessor.failure(testInternal.getId(), failure.getException());
+        TestFailure testFailure = new DefaultTestFailure(failure.getException(), false); // TODO maybe we should add wrappers here
+        resultProcessor.failure(testInternal.getId(), testFailure);
         if (needEndEvent) {
             resultProcessor.completed(testInternal.getId(), new TestCompleteEvent(clock.getCurrentTime()));
         }

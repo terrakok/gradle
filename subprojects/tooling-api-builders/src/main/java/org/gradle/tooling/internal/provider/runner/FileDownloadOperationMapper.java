@@ -87,7 +87,7 @@ public class FileDownloadOperationMapper implements BuildOperationMapper<Externa
         long endTime = finishEvent.getEndTime();
         AbstractOperationResult result;
         if (failure != null) {
-            result = new DefaultFileDownloadFailureResult(startTime, endTime, Collections.singletonList(DefaultFailure.fromThrowable(failure)), operationResult.getBytesRead());
+            result = new DefaultFileDownloadFailureResult(startTime, endTime, Collections.singletonList(DefaultFailure.fromThrowable(failure, false)), operationResult.getBytesRead());
         } else {
             result = new DefaultFileDownloadSuccessResult(startTime, endTime, operationResult.getBytesRead());
         }

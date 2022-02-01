@@ -18,6 +18,7 @@ package org.gradle.tooling.internal.provider.runner;
 import com.google.common.collect.ImmutableList;
 import org.gradle.api.internal.tasks.testing.TestDescriptorInternal;
 import org.gradle.api.internal.tasks.testing.operations.ExecuteTestBuildOperationType;
+import org.gradle.api.tasks.testing.TestFailure;
 import org.gradle.api.tasks.testing.TestResult;
 import org.gradle.internal.build.event.BuildEventSubscriptions;
 import org.gradle.internal.build.event.types.AbstractTestResult;
@@ -33,6 +34,7 @@ import org.gradle.internal.operations.OperationFinishEvent;
 import org.gradle.internal.operations.OperationIdentifier;
 import org.gradle.internal.operations.OperationStartEvent;
 import org.gradle.tooling.events.OperationType;
+import org.gradle.tooling.internal.protocol.InternalFailure;
 import org.gradle.tooling.internal.protocol.events.InternalJvmTestDescriptor;
 import org.gradle.tooling.internal.protocol.events.InternalOperationFinishedProgressEvent;
 import org.gradle.tooling.internal.protocol.events.InternalOperationStartedProgressEvent;
@@ -122,18 +124,17 @@ class TestOperationMapper implements BuildOperationMapper<ExecuteTestBuildOperat
             case SKIPPED:
                 return new DefaultTestSkippedResult(result.getStartTime(), result.getEndTime());
             case FAILURE:
-                return new DefaultTestFailureResult(result.getStartTime(), result.getEndTime(), convertExceptions(result.getExceptions()));
+                return new DefaultTestFailureResult(result.getStartTime(), result.getEndTime(), convertExceptions(result.getFailures()));
             default:
                 throw new IllegalStateException("Unknown test result type: " + resultType);
         }
     }
 
-    private static List<DefaultFailure> convertExceptions(List<Throwable> exceptions) {
-        List<DefaultFailure> failures = new ArrayList<>(exceptions.size());
-        for (Throwable exception : exceptions) {
-            failures.add(DefaultFailure.fromThrowable(exception));
+    private static List<InternalFailure> convertExceptions(List<TestFailure> failures) {
+        List<InternalFailure> result = new ArrayList<>(failures.size());
+        for (TestFailure failure : failures) {
+            result.add(DefaultFailure.fromThrowable(failure.getRawFailure(), failure.isAssertionFailure()));
         }
-        return failures;
+        return result;
     }
-
 }

@@ -15,6 +15,7 @@
  */
 package org.gradle.internal.build.event.types;
 
+import org.gradle.tooling.internal.protocol.InternalAssertionFailure;
 import org.gradle.tooling.internal.protocol.InternalFailure;
 
 import java.io.PrintWriter;
@@ -23,18 +24,44 @@ import java.io.StringWriter;
 import java.util.Collections;
 import java.util.List;
 
-public class DefaultFailure implements Serializable, InternalFailure {
+public class DefaultAssertionFailure implements Serializable, InternalAssertionFailure {
 
     private final String message;
     private final String description;
     private final DefaultFailure cause;
-    private final boolean assertionFailure;
+    private final String expected;
+    private final String actual;
 
-    protected DefaultFailure(String message, String description, DefaultFailure cause, boolean assertionFailure) {
+    private DefaultAssertionFailure(String message, String description, DefaultFailure cause, String expected, String actual) {
         this.message = message;
         this.description = description;
         this.cause = cause;
-        this.assertionFailure = assertionFailure;
+
+        this.expected = expected;
+        this.actual = actual;
+    }
+
+    public String getExpected() {
+        return expected;
+    }
+
+    public String getActual() {
+        return actual;
+    }
+
+    public static DefaultAssertionFailure fromThrowable(Throwable t, boolean assertionFailure) {
+        if (assertionFailure) {
+            String expected = "<TODO_expected>";
+            String actual = "<TODO_actual>";
+            StringWriter out = new StringWriter();
+            PrintWriter wrt = new PrintWriter(out);
+            t.printStackTrace(wrt);
+            Throwable cause = t.getCause();
+            DefaultAssertionFailure causeFailure = cause != null && cause != t ? fromThrowable(cause, false) : null;
+            return new DefaultAssertionFailure(t.getMessage(), out.toString(), null, expected, actual);
+        } else {
+            throw new RuntimeException("Not an assertion failure");
+        }
     }
 
     @Override
@@ -49,23 +76,6 @@ public class DefaultFailure implements Serializable, InternalFailure {
 
     @Override
     public List<? extends InternalFailure> getCauses() {
-        return cause == null ? Collections.<InternalFailure>emptyList() : Collections.singletonList(cause);
+        return Collections.singletonList(cause);
     }
-
-    public boolean isAssertionFailure() {
-        return assertionFailure;
-    }
-
-    public static InternalFailure fromThrowable(Throwable t, boolean assertionFailure) {
-        if (assertionFailure) {
-            return DefaultAssertionFailure.fromThrowable(t, assertionFailure);
-        }
-        StringWriter out = new StringWriter();
-        PrintWriter wrt = new PrintWriter(out);
-        t.printStackTrace(wrt);
-        Throwable cause = t.getCause();
-        DefaultFailure causeFailure = cause != null && cause != t ? (DefaultFailure) fromThrowable(cause, false) : null;
-        return new DefaultFailure(t.getMessage(), out.toString(), causeFailure, assertionFailure); // TODO restore cause field
-    }
-
-    }
+}

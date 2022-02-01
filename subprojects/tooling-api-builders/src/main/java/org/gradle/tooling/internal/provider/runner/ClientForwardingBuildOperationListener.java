@@ -16,6 +16,8 @@
 
 package org.gradle.tooling.internal.provider.runner;
 
+import org.gradle.api.internal.tasks.testing.operations.ExecuteTestBuildOperationType;
+import org.gradle.api.tasks.testing.TestFailure;
 import org.gradle.internal.build.event.types.AbstractOperationResult;
 import org.gradle.internal.build.event.types.DefaultFailure;
 import org.gradle.internal.build.event.types.DefaultFailureResult;
@@ -31,6 +33,7 @@ import org.gradle.internal.operations.OperationProgressEvent;
 import org.gradle.internal.operations.OperationStartEvent;
 
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Build listener that forwards all receiving events to the client via the provided {@code ProgressEventConsumer} instance.
@@ -69,10 +72,20 @@ class ClientForwardingBuildOperationListener implements BuildOperationListener {
 
     static AbstractOperationResult toOperationResult(OperationFinishEvent result) {
         Throwable failure = result.getFailure();
+        boolean isAssertionFailure = false;
+
+        if (result.getResult() instanceof ExecuteTestBuildOperationType.Result) {
+            List<TestFailure> failures = ((ExecuteTestBuildOperationType.Result) result.getResult()).getResult().getFailures();
+            // TODO handle 0 and 2+ failures
+            if (failures.size() > 0) {
+                isAssertionFailure = failures.get(0).isAssertionFailure();
+            }
+        }
+
         long startTime = result.getStartTime();
         long endTime = result.getEndTime();
         if (failure != null) {
-            return new DefaultFailureResult(startTime, endTime, Collections.singletonList(DefaultFailure.fromThrowable(failure)));
+            return new DefaultFailureResult(startTime, endTime, Collections.singletonList(DefaultFailure.fromThrowable(failure, isAssertionFailure)));
         }
         return new DefaultSuccessResult(startTime, endTime);
     }

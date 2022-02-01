@@ -223,5 +223,4 @@ public class JUnitPlatformTestClassProcessor extends AbstractJUnitTestClassProce
                 .map(ClassSource::getClassName);
         }
     }
-
 }

@@ -16,11 +16,25 @@
 
 package org.gradle.api.internal.tasks.testing.worker;
 
-import org.gradle.api.internal.tasks.testing.*;
+import org.gradle.api.internal.tasks.testing.DefaultNestedTestSuiteDescriptor;
+import org.gradle.api.internal.tasks.testing.DefaultTestClassDescriptor;
+import org.gradle.api.internal.tasks.testing.DefaultTestClassRunInfo;
+import org.gradle.api.internal.tasks.testing.DefaultTestDescriptor;
+import org.gradle.api.internal.tasks.testing.DefaultTestFailure;
+import org.gradle.api.internal.tasks.testing.DefaultTestMethodDescriptor;
+import org.gradle.api.internal.tasks.testing.DefaultTestOutputEvent;
+import org.gradle.api.internal.tasks.testing.DefaultTestSuiteDescriptor;
+import org.gradle.api.internal.tasks.testing.TestCompleteEvent;
+import org.gradle.api.internal.tasks.testing.TestStartEvent;
 import org.gradle.api.tasks.testing.TestOutputEvent;
 import org.gradle.api.tasks.testing.TestResult;
 import org.gradle.internal.id.CompositeIdGenerator;
-import org.gradle.internal.serialize.*;
+import org.gradle.internal.serialize.BaseSerializerFactory;
+import org.gradle.internal.serialize.Decoder;
+import org.gradle.internal.serialize.DefaultSerializerRegistry;
+import org.gradle.internal.serialize.Encoder;
+import org.gradle.internal.serialize.Serializer;
+import org.gradle.internal.serialize.SerializerRegistry;
 
 public class TestEventSerializer {
     public static SerializerRegistry create() {
@@ -37,7 +51,9 @@ public class TestEventSerializer {
         registry.register(TestStartEvent.class, new TestStartEventSerializer());
         registry.register(TestCompleteEvent.class, new TestCompleteEventSerializer());
         registry.register(DefaultTestOutputEvent.class, new DefaultTestOutputEventSerializer());
-        registry.register(Throwable.class, factory.getSerializerFor(Throwable.class));
+        Serializer<Throwable> throwableSerializer = factory.getSerializerFor(Throwable.class);
+        registry.register(Throwable.class, throwableSerializer);
+        registry.register(DefaultTestFailure.class, new DefaultTestFailureSerializer(throwableSerializer));
         return registry;
     }
 
@@ -138,6 +154,27 @@ public class TestEventSerializer {
         public void write(Encoder encoder, DefaultTestOutputEvent value) throws Exception {
             destinationSerializer.write(encoder, value.getDestination());
             encoder.writeString(value.getMessage());
+        }
+    }
+
+    private static class DefaultTestFailureSerializer implements Serializer<DefaultTestFailure> {
+        private final Serializer<Throwable> throwableSerializer;
+
+        public DefaultTestFailureSerializer(Serializer<Throwable> throwableSerializer) {
+            this.throwableSerializer = throwableSerializer;
+        }
+
+        @Override
+        public DefaultTestFailure read(Decoder decoder) throws Exception {
+            Throwable rawFailure = throwableSerializer.read(decoder);
+            boolean isAssertionFailure = decoder.readBoolean();
+            return new DefaultTestFailure(rawFailure, isAssertionFailure);
+        }
+
+        @Override
+        public void write(Encoder encoder, DefaultTestFailure value) throws Exception {
+            throwableSerializer.write(encoder, value.getRawFailure());
+            encoder.writeBoolean(value.isAssertionFailure());
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 the original author or authors.
+ * Copyright 2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package org.gradle.api.internal.tasks.testing.junit;
+package org.gradle.api.tasks.testing;
 
-import org.gradle.api.tasks.testing.TestFailure;
-
-public interface TestClassExecutionListener {
-    void testClassStarted(String testClassName);
-
-    void testClassFinished(TestFailure failure);
+public interface TestFailure {
+    Throwable getRawFailure();
+    boolean isAssertionFailure();
 }

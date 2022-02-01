@@ -47,6 +47,13 @@ public interface TestResult {
     Throwable getException();
 
     /**
+     * TODO
+     * @return the failure with its internal representation
+     */
+    @Nullable
+    List<TestFailure> getFailures();
+
+    /**
      * If the test failed with any exceptions, this will contain the exceptions.  Some test frameworks do not fail
      * without an exception (JUnit), so in those cases this method will never return an empty list.
      *
