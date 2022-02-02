@@ -55,6 +55,10 @@ public interface StyledTextOutput extends Appendable {
          */
         Success,
         /**
+         * General purpose alternative success message (for highlighting successes of different natures)
+         */
+        AlternativeSuccess,
+        /**
          * <b>Emphasized</b> success message
          */
         SuccessHeader,
