@@ -22,19 +22,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultJvmTestRetryer implements JvmTestRetryer {
 
-    private final AtomicBoolean hasAnyTestFail;
+    private final AtomicBoolean hasAnyTestFailed;
     private final long maxRetryCount;
     private final boolean stopAfterFailure;
 
     public DefaultJvmTestRetryer(JvmRetrySpec retrySpec) {
         this.maxRetryCount = Math.max(retrySpec.getMaxRetries(), 1);
         this.stopAfterFailure = retrySpec.isForceStopAfterFailure();
-        this.hasAnyTestFail = new AtomicBoolean();
+        this.hasAnyTestFailed = new AtomicBoolean();
     }
 
     @Override
     public TestResultProcessor decorateTestResultProcessor(TestResultProcessor other) {
-        return new JvmTestRetryerResultProcessor(hasAnyTestFail, other);
+        return new JvmTestRetryerResultProcessor(hasAnyTestFailed, other);
     }
 
     @Override
@@ -50,6 +50,6 @@ public class DefaultJvmTestRetryer implements JvmTestRetryer {
     }
 
     private boolean hasAnyTestFailed() {
-        return stopAfterFailure && hasAnyTestFail.get();
+        return stopAfterFailure && hasAnyTestFailed.get();
     }
 }

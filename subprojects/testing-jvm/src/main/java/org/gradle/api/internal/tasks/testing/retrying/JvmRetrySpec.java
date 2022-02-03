@@ -38,7 +38,11 @@ public class JvmRetrySpec implements Serializable {
         return forceStopAfterFailure;
     }
 
-    static JvmRetrySpec of(Provider<Long> retryUntilFailureCount, Provider<Long> retryUntilStoppedCount) {
+    public static JvmRetrySpec noRetries() {
+        return new JvmRetrySpec(1, false);
+    }
+
+    public static JvmRetrySpec of(Provider<Long> retryUntilFailureCount, Provider<Long> retryUntilStoppedCount) {
         long maxRetries = retryUntilFailureCount.isPresent() ? retryUntilFailureCount.get() : retryUntilStoppedCount.getOrElse(1L);
         boolean stopAfterFailure = retryUntilFailureCount.isPresent();
         return new JvmRetrySpec(maxRetries, stopAfterFailure);
