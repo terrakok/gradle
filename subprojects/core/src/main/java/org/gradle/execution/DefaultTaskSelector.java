@@ -20,6 +20,8 @@ import org.gradle.api.Task;
 import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.internal.GradleInternal;
 import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.specs.Spec;
 import org.gradle.execution.taskpath.ResolvedTaskPath;
 import org.gradle.execution.taskpath.TaskPathResolver;
@@ -32,6 +34,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class DefaultTaskSelector extends TaskSelector {
+    private static final Logger LOGGER = Logging.getLogger(DefaultTaskSelector.class);
+
     private final TaskNameResolver taskNameResolver;
     private final GradleInternal gradle;
     private final ProjectConfigurer configurer;
@@ -100,17 +104,21 @@ public class DefaultTaskSelector extends TaskSelector {
         TaskSelectionResult tasks = taskNameResolver.selectWithName(taskPath.getTaskName(), taskPath.getProject(), !taskPath.isQualified());
         if (tasks != null) {
             // An exact match
+            LOGGER.info("Found exact task with name '{}'", taskPath.getTaskName());
             return new TaskSelection(taskPath.getProject().getPath(), path, tasks);
-        }
+        } else {
+            LOGGER.info("No exact task with name ‘{}’ has been found. Checking for abbreviated names.", taskPath.getTaskName());
+            Map<String, TaskSelectionResult> tasksByName = taskNameResolver.selectAll(taskPath.getProject(), !taskPath.isQualified());
+            NameMatcher matcher = new NameMatcher();
+            String actualName = matcher.find(taskPath.getTaskName(), tasksByName.keySet());
 
-        Map<String, TaskSelectionResult> tasksByName = taskNameResolver.selectAll(taskPath.getProject(), !taskPath.isQualified());
-        NameMatcher matcher = new NameMatcher();
-        String actualName = matcher.find(taskPath.getTaskName(), tasksByName.keySet());
-        if (actualName != null) {
-            return new TaskSelection(taskPath.getProject().getPath(), taskPath.getPrefix() + actualName, tasksByName.get(actualName));
-        }
+            if (actualName != null) {
+                LOGGER.info("Found exactly one task name, that matches the abbreviated name ‘{}’: '{}'.", taskPath.getTaskName(), actualName);
+                return new TaskSelection(taskPath.getProject().getPath(), taskPath.getPrefix() + actualName, tasksByName.get(actualName));
+            }
 
-        throw new TaskSelectionException(matcher.formatErrorMessage("task", taskPath.getProject()));
+            throw new TaskSelectionException(matcher.formatErrorMessage("task", taskPath.getProject()));
+        }
     }
 
     private static class TaskPathSpec implements Spec<Task> {
