@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,19 +49,15 @@ public class DefaultAssertionFailure implements Serializable, InternalAssertionF
         return actual;
     }
 
-    public static DefaultAssertionFailure fromThrowable(Throwable t, boolean assertionFailure) {
-        if (assertionFailure) {
-            String expected = "<TODO_expected>";
-            String actual = "<TODO_actual>";
-            StringWriter out = new StringWriter();
-            PrintWriter wrt = new PrintWriter(out);
-            t.printStackTrace(wrt);
-            Throwable cause = t.getCause();
-            DefaultAssertionFailure causeFailure = cause != null && cause != t ? fromThrowable(cause, false) : null;
-            return new DefaultAssertionFailure(t.getMessage(), out.toString(), null, expected, actual);
-        } else {
-            throw new RuntimeException("Not an assertion failure");
-        }
+    public static DefaultAssertionFailure fromThrowable(Throwable t) {
+        String expected = "<TODO_expected>";
+        String actual = "<TODO_actual>";
+        StringWriter out = new StringWriter();
+        PrintWriter wrt = new PrintWriter(out);
+        t.printStackTrace(wrt);
+        Throwable cause = t.getCause();
+        DefaultAssertionFailure causeFailure = cause != null && cause != t ? fromThrowable(cause) : null;
+        return new DefaultAssertionFailure(t.getMessage(), out.toString(), null, expected, actual);
     }
 
     @Override

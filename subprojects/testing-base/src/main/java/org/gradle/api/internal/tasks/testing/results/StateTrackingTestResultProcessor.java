@@ -99,7 +99,6 @@ public class StateTrackingTestResultProcessor implements TestResultProcessor {
 
     @Override
     public final void failure(Object testId, TestFailure testFailure) {
-        System.out.println("failure3");
         TestState testState = executing.get(testId);
         if (testState == null) {
             throw new IllegalArgumentException(String.format(

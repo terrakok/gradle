@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.tasks.testing
 
+import org.gradle.api.tasks.testing.TestFailure
 import org.gradle.api.tasks.testing.TestResult
 
 class SimpleTestResult implements TestResult {

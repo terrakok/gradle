@@ -19,6 +19,7 @@ package org.gradle.api.internal.tasks.testing.junit
 import junit.extensions.TestSetup
 import junit.framework.TestCase
 import junit.framework.TestSuite
+import org.gradle.api.internal.tasks.testing.DefaultTestFailure
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -77,19 +78,19 @@ public class AnIgnoredTestClass {
 }
 
 public class ABrokenTestClass {
-    static RuntimeException failure = new RuntimeException()
+    static def failure = new DefaultTestFailure(new RuntimeException(), false)
 
     @Test
     public void broken() {
-        throw failure.fillInStackTrace()
+        throw failure.rawFailure.fillInStackTrace()
     }
 }
 
 public class ATestClassWithBrokenConstructor {
-    static RuntimeException failure = new RuntimeException()
+    static def failure = new DefaultTestFailure(new RuntimeException(), false)
 
     def ATestClassWithBrokenConstructor() {
-        throw failure.fillInStackTrace()
+        throw failure.rawFailure.fillInStackTrace()
     }
 
     @Test
@@ -98,11 +99,11 @@ public class ATestClassWithBrokenConstructor {
 }
 
 public class ATestClassWithBrokenBeforeMethod {
-    static RuntimeException failure = new RuntimeException()
+    static def failure = new DefaultTestFailure(new RuntimeException(), false)
 
     @Before
     public void setup() {
-        throw failure.fillInStackTrace()
+        throw failure.rawFailure.fillInStackTrace()
     }
 
     @Test
@@ -111,17 +112,17 @@ public class ATestClassWithBrokenBeforeMethod {
 }
 
 public class ATestClassWithBrokenBeforeAndAfterMethod {
-    static RuntimeException beforeFailure = new RuntimeException()
-    static RuntimeException afterFailure = new RuntimeException()
+    static def beforeFailure = new DefaultTestFailure(new RuntimeException(), false)
+    static def afterFailure = new DefaultTestFailure(new RuntimeException(), false)
 
     @Before
     public void setup() {
-        throw beforeFailure.fillInStackTrace()
+        throw beforeFailure.rawFailure.fillInStackTrace()
     }
 
     @After
     public void teardown() {
-        throw afterFailure.fillInStackTrace()
+        throw afterFailure.rawFailure.fillInStackTrace()
     }
 
     @Test
@@ -130,11 +131,11 @@ public class ATestClassWithBrokenBeforeAndAfterMethod {
 }
 
 public class ATestClassWithBrokenBeforeClassMethod {
-    static RuntimeException failure = new RuntimeException()
+    static def failure = new DefaultTestFailure(new RuntimeException(), false)
 
     @BeforeClass
     public static void setup() {
-        throw failure.fillInStackTrace()
+        throw failure.rawFailure.fillInStackTrace()
     }
 
     @Test
@@ -159,10 +160,10 @@ public class AJunit3TestThatRenamesItself extends TestCase {
 }
 
 public class ABrokenJunit3TestClass extends TestCase {
-    static RuntimeException failure = new RuntimeException()
+    static def failure = new DefaultTestFailure(new RuntimeException(), false)
 
     public void testBroken() {
-        throw failure.fillInStackTrace()
+        throw failure.rawFailure.fillInStackTrace()
     }
 }
 
@@ -173,22 +174,22 @@ public class ATestClassWithSuiteMethod {
 }
 
 public class ATestClassWithBrokenSuiteMethod {
-    static RuntimeException failure = new RuntimeException('broken')
+    static def failure = new DefaultTestFailure(new RuntimeException('broken'), false)
 
     public static junit.framework.Test suite() {
-        throw failure
+        throw failure.rawFailure
     }
 }
 
 public class ATestSetUpWithBrokenSetUp extends TestSetup {
-    static RuntimeException failure = new RuntimeException('broken')
+    static def failure = new DefaultTestFailure(new RuntimeException('broken'), false)
 
     def ATestSetUpWithBrokenSetUp() {
         super(new TestSuite(AJunit3TestClass.class))
     }
 
     protected void setUp() {
-        throw failure
+        throw failure.rawFailure
     }
 
     public static junit.framework.Test suite() {
@@ -200,7 +201,7 @@ public class ATestSetUpWithBrokenSetUp extends TestSetup {
 public class ATestClassWithRunner {}
 
 public class CustomRunner extends Runner {
-    static RuntimeException failure = new RuntimeException('broken')
+    static def failure = new DefaultTestFailure(new RuntimeException('broken'), false)
     Class<?> type
 
     def CustomRunner(Class<?> type) {
@@ -222,7 +223,7 @@ public class CustomRunner extends Runner {
         Description test2 = Description.createTestDescription(type, 'ok')
         runNotifier.fireTestStarted(test1)
         runNotifier.fireTestStarted(test2)
-        runNotifier.fireTestFailure(new Failure(test1, failure.fillInStackTrace()))
+        runNotifier.fireTestFailure(new Failure(test1, failure.rawFailure.fillInStackTrace()))
         runNotifier.fireTestFinished(test2)
         runNotifier.fireTestFinished(test1)
     }
@@ -232,10 +233,10 @@ public class CustomRunner extends Runner {
 public class ATestClassWithUnconstructibleRunner {}
 
 public class CustomRunnerWithBrokenConstructor extends Runner {
-    static RuntimeException failure = new RuntimeException()
+    static def failure = new DefaultTestFailure(new RuntimeException(), false)
 
     def CustomRunnerWithBrokenConstructor(Class<?> type) {
-        throw failure.fillInStackTrace()
+        throw failure.rawFailure.fillInStackTrace()
     }
 
     Description getDescription() {
@@ -251,7 +252,7 @@ public class CustomRunnerWithBrokenConstructor extends Runner {
 public class ATestClassWithBrokenRunner {}
 
 public class CustomRunnerWithBrokenRunMethod extends Runner {
-    static RuntimeException failure = new RuntimeException()
+    static def failure = new DefaultTestFailure(new RuntimeException(), false)
     final Class<?> type
 
     def CustomRunnerWithBrokenRunMethod(Class<?> type) {
@@ -263,7 +264,7 @@ public class CustomRunnerWithBrokenRunMethod extends Runner {
     }
 
     void run(RunNotifier notifier) {
-        throw failure.fillInStackTrace()
+        throw failure.rawFailure.fillInStackTrace()
     }
 }
 
@@ -271,7 +272,7 @@ public class CustomRunnerWithBrokenRunMethod extends Runner {
 public class ATestClassWithRunnerThatBreaksAfterRunningSomeTests {}
 
 public class CustomRunnerWithRunMethodThatBreaksAfterRunningSomeTests extends Runner {
-    static RuntimeException failure = new RuntimeException()
+    static def failure = new DefaultTestFailure(new RuntimeException(), false)
     final Class<?> type
 
     def CustomRunnerWithRunMethodThatBreaksAfterRunningSomeTests(Class<?> type) {
@@ -286,7 +287,7 @@ public class CustomRunnerWithRunMethodThatBreaksAfterRunningSomeTests extends Ru
         notifier.fireTestStarted(Description.createTestDescription(type, "ok1"))
         notifier.fireTestFinished(Description.createTestDescription(type, "ok1"))
         notifier.fireTestStarted(Description.createTestDescription(type, "broken"))
-        throw failure.fillInStackTrace()
+        throw failure.rawFailure.fillInStackTrace()
     }
 }
 

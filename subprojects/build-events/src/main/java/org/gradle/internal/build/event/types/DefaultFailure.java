@@ -28,13 +28,11 @@ public class DefaultFailure implements Serializable, InternalFailure {
     private final String message;
     private final String description;
     private final DefaultFailure cause;
-    private final boolean assertionFailure;
 
-    protected DefaultFailure(String message, String description, DefaultFailure cause, boolean assertionFailure) {
+    protected DefaultFailure(String message, String description, DefaultFailure cause) {
         this.message = message;
         this.description = description;
         this.cause = cause;
-        this.assertionFailure = assertionFailure;
     }
 
     @Override
@@ -49,23 +47,18 @@ public class DefaultFailure implements Serializable, InternalFailure {
 
     @Override
     public List<? extends InternalFailure> getCauses() {
-        return cause == null ? Collections.<InternalFailure>emptyList() : Collections.singletonList(cause);
-    }
-
-    public boolean isAssertionFailure() {
-        return assertionFailure;
+        return cause == null ? Collections.emptyList() : Collections.singletonList(cause);
     }
 
     public static InternalFailure fromThrowable(Throwable t, boolean assertionFailure) {
         if (assertionFailure) {
-            return DefaultAssertionFailure.fromThrowable(t, assertionFailure);
+            return DefaultAssertionFailure.fromThrowable(t);
         }
         StringWriter out = new StringWriter();
         PrintWriter wrt = new PrintWriter(out);
         t.printStackTrace(wrt);
         Throwable cause = t.getCause();
         DefaultFailure causeFailure = cause != null && cause != t ? (DefaultFailure) fromThrowable(cause, false) : null;
-        return new DefaultFailure(t.getMessage(), out.toString(), causeFailure, assertionFailure); // TODO restore cause field
+        return new DefaultFailure(t.getMessage(), out.toString(), causeFailure); // TODO restore cause field
     }
-
-    }
+}

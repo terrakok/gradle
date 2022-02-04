@@ -17,8 +17,6 @@
 package org.gradle.tooling.internal.provider.runner;
 
 import com.google.common.collect.ImmutableList;
-import org.gradle.api.internal.tasks.testing.operations.ExecuteTestBuildOperationType;
-import org.gradle.api.tasks.testing.TestFailure;
 import org.gradle.configuration.project.ConfigureProjectBuildOperationType;
 import org.gradle.internal.build.event.BuildEventSubscriptions;
 import org.gradle.internal.build.event.types.AbstractProjectConfigurationResult;

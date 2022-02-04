@@ -180,7 +180,7 @@ class TestEventSerializerTest extends SerializerSpec {
         def failure = new DefaultTestFailure(rawFailure, true)
 
         when:
-        def result = serialize(failure, TestFailure)
+        def result = serialize(failure, DefaultTestFailure)
 
         then:
         result.rawFailure.message == "cause"

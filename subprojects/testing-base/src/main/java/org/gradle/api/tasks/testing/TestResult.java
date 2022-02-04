@@ -16,6 +16,8 @@
 
 package org.gradle.api.tasks.testing;
 
+import org.gradle.api.Incubating;
+
 import javax.annotation.Nullable;
 import java.util.List;
 
@@ -47,10 +49,13 @@ public interface TestResult {
     Throwable getException();
 
     /**
-     * TODO
-     * @return the failure with its internal representation
+     * If the test failed with any exceptions, this will contain the exceptions and a description of the failure types.
+     *
+     * @return The failures, if any, logged for this test.  If none, an empty list is returned.
+     * @see #getExceptions()
+     * @since 7.5
      */
-    @Nullable
+    @Incubating
     List<TestFailure> getFailures();
 
     /**

@@ -16,7 +16,26 @@
 
 package org.gradle.api.tasks.testing;
 
+import org.gradle.api.Incubating;
+
+/**
+ * Describes a test failure. Contains a reference to the failure and some structural information retrieved by the test worker.
+ *
+ * @since 7.5
+ */
+@Incubating
 public interface TestFailure {
+    /**
+     * Returns the raw failure.
+     *
+     * @return the raw failure
+     */
     Throwable getRawFailure();
+
+    /**
+     * Returns whether the failure is recognized as an assertion failure.
+     *
+     * @return true if the failure is recognized as an assertion failure, false otherwise
+     */
     boolean isAssertionFailure();
 }

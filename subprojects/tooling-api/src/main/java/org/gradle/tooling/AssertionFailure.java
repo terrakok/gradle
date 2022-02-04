@@ -15,11 +15,14 @@
  */
 package org.gradle.tooling;
 
+import org.gradle.api.Incubating;
+
 /**
  * A test assertion failure.
  *
  * @since 7.5
  */
+@Incubating
 public interface AssertionFailure extends Failure {
 
     /**

@@ -42,7 +42,7 @@ public class SuiteTestClassProcessor implements TestClassProcessor {
             processor.startProcessing(resultProcessor);
         } catch (Throwable t) {
             Throwable rawFailure = new TestSuiteExecutionException(String.format("Could not start %s.", suiteDescriptor), t);
-            TestFailure testFailure = new DefaultTestFailure(rawFailure, false); // TODO maybe we can add an extra type here
+            TestFailure testFailure = new DefaultTestFailure(rawFailure, false);
             resultProcessor.failure(suiteDescriptor.getId(), testFailure);
         }
     }
@@ -53,7 +53,7 @@ public class SuiteTestClassProcessor implements TestClassProcessor {
             processor.processTestClass(testClass);
         } catch (Throwable t) {
             Throwable rawFailure = new TestSuiteExecutionException(String.format("Could not execute test class '%s'.", testClass.getTestClassName()), t);
-            TestFailure testFailure = new DefaultTestFailure(rawFailure, false); // TODO maybe we can add an extra type here
+            TestFailure testFailure = new DefaultTestFailure(rawFailure, false);
             resultProcessor.failure(suiteDescriptor.getId(), testFailure);
         }
     }

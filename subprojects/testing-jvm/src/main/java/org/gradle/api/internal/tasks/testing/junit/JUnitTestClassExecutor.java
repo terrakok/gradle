@@ -55,15 +55,20 @@ public class JUnitTestClassExecutor implements Action<String> {
     public void execute(String testClassName) {
         executionListener.testClassStarted(testClassName);
 
-        Throwable failure = null;
+        Object failure = null;
         try {
             runTestClass(testClassName);
         } catch (Throwable throwable) {
             failure = throwable;
         }
 
-        TestFailure testFailure = new DefaultTestFailure(failure, false);
-        executionListener.testClassFinished(testFailure);
+        if (failure instanceof Throwable) {
+            TestFailure testFailure = new DefaultTestFailure((Throwable) failure, false);
+            executionListener.testClassFinished(testFailure);
+        } else {
+            executionListener.testClassFinished(null);
+        }
+
     }
 
     private void runTestClass(String testClassName) throws ClassNotFoundException {

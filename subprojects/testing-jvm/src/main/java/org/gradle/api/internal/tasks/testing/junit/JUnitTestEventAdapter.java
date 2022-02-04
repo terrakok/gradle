@@ -76,7 +76,7 @@ public class JUnitTestEventAdapter extends RunListener {
             testInternal = descriptor;
             resultProcessor.started(testInternal, startEvent());
         }
-        TestFailure testFailure = new DefaultTestFailure(failure.getException(), false); // TODO maybe we should add wrappers here
+        TestFailure testFailure = new DefaultTestFailure(failure.getException(), false);
         resultProcessor.failure(testInternal.getId(), testFailure);
         if (needEndEvent) {
             resultProcessor.completed(testInternal.getId(), new TestCompleteEvent(clock.getCurrentTime()));

@@ -19,7 +19,6 @@ package org.gradle.testing
 import org.gradle.integtests.fixtures.AbstractIntegrationSpec
 import org.gradle.integtests.fixtures.DefaultTestExecutionResult
 import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
-import spock.lang.Ignore
 import spock.lang.IgnoreIf
 
 import static org.hamcrest.CoreMatchers.containsString
@@ -31,7 +30,6 @@ class SuppressedExceptionTestingIntegrationTest extends AbstractIntegrationSpec 
         executer.withRepositoryMirrors()
     }
 
-    @Ignore // TODO re-enable test
     def "non-deserializable suppressed exceptions are preserved"() {
         buildFile << """
             apply plugin:'java-library'
