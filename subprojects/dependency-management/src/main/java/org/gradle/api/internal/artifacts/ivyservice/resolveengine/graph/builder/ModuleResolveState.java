@@ -262,11 +262,12 @@ class ModuleResolveState implements CandidateModule {
 
     private void doRestart(ComponentState selected) {
         selectComponentAndEvictOthers(selected);
-        for (ComponentState version : versions.values()) {
-            version.restartIncomingEdges(selected);
-        }
+        // Need to restart selectors first otherwise result between versions and unattached edges might differ
         for (SelectorState selector : selectors) {
             selector.overrideSelection(selected);
+        }
+        for (ComponentState version : versions.values()) {
+            version.restartIncomingEdges(selected);
         }
         if (!unattachedDependencies.isEmpty()) {
             restartUnattachedDependencies();
