@@ -19,15 +19,22 @@ package org.gradle.tooling.internal.consumer;
 import org.gradle.tooling.AssertionFailure;
 import org.gradle.tooling.Failure;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
-public class DefaultAssertionFailure extends DefaultFailure implements AssertionFailure {
+public class DefaultAssertionFailure implements AssertionFailure {
+
+    private final String message;
+    private final String description;
+    private final List<? extends Failure> causes;
 
     private final String expected;
     private final String actual;
 
     public DefaultAssertionFailure(String message, String description, String expected, String actual, List<? extends Failure> causes) {
-        super(message, description, causes);
+        this.message = message;
+        this.description = description;
+        this.causes = causes;
         this.expected = expected;
         this.actual = actual;
     }
@@ -40,5 +47,22 @@ public class DefaultAssertionFailure extends DefaultFailure implements Assertion
     @Override
     public String getActual() {
         return actual;
+    }
+
+    @Nullable
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+    @Nullable
+    @Override
+    public String getDescription() {
+        return description;
+    }
+
+    @Override
+    public List<? extends Failure> getCauses() {
+        return causes;
     }
 }
