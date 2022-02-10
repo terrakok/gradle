@@ -27,7 +27,6 @@ import org.gradle.internal.service.scopes.ServiceScope;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Collection;
-import java.util.function.Consumer;
 
 /**
  * A registry of all projects present in a build tree.
@@ -66,7 +65,7 @@ public interface ProjectStateRegistry {
     ProjectState registerProject(BuildState owner, DefaultProjectDescriptor projectDescriptor);
 
     /**
-     * Allows the given code to access the mutable state of any project, regardless of which other threads may be accessing the project.
+     * Allows the given code to access the mutable state of any project in the tree, regardless of which other threads may be accessing the project.
      *
      * DO NOT USE THIS METHOD. It is here to allow some very specific backwards compatibility.
      */

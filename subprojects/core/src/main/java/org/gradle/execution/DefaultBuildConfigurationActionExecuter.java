@@ -18,7 +18,6 @@ package org.gradle.execution;
 
 import com.google.common.collect.Lists;
 import org.gradle.api.internal.GradleInternal;
-import org.gradle.api.internal.project.ProjectStateRegistry;
 import org.gradle.execution.plan.ExecutionPlan;
 
 import java.util.List;
