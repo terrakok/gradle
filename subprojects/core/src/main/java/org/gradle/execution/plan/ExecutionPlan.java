@@ -20,7 +20,6 @@ import org.gradle.api.Describable;
 import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;
 import org.gradle.internal.resources.ResourceLockState;
-import org.gradle.internal.work.WorkerLeaseRegistry;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -45,7 +44,7 @@ public interface ExecutionPlan extends Describable {
 
         @Nullable
         @Override
-        public Node selectNext(WorkerLeaseRegistry.WorkerLease workerLease, ResourceLockState resourceLockState) {
+        public Node selectNext(ResourceLockState resourceLockState) {
             return null;
         }
 
@@ -144,7 +143,7 @@ public interface ExecutionPlan extends Describable {
      * Selects a work item to run, returns null if there is no work remaining _or_ if no queued work is ready to run.
      */
     @Nullable
-    Node selectNext(WorkerLeaseRegistry.WorkerLease workerLease, ResourceLockState resourceLockState);
+    Node selectNext(ResourceLockState resourceLockState);
 
     void finishedExecuting(Node node);
 

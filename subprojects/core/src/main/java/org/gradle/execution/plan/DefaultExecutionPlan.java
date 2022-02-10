@@ -397,8 +397,8 @@ public class DefaultExecutionPlan implements ExecutionPlan {
             // Walk the properties of the task to determine if it is a destroyer or a producer (or neither)
             propertyWalker.visitProperties(taskNode.getTask(), TypeValidationContext.NOOP, taskClassifier);
             taskNode.getTask().getOutputs().visitRegisteredProperties(taskClassifier);
-            ((TaskDestroyablesInternal)taskNode.getTask().getDestroyables()).visitRegisteredProperties(taskClassifier);
-            ((TaskLocalStateInternal)taskNode.getTask().getLocalState()).visitRegisteredProperties(taskClassifier);
+            ((TaskDestroyablesInternal) taskNode.getTask().getDestroyables()).visitRegisteredProperties(taskClassifier);
+            ((TaskLocalStateInternal) taskNode.getTask().getLocalState()).visitRegisteredProperties(taskClassifier);
 
             if (taskClassifier.isDestroyer()) {
                 // Create (or get) a destroyer ordinal node that depends on the dependencies of this task node
@@ -611,13 +611,13 @@ public class DefaultExecutionPlan implements ExecutionPlan {
 
     @Override
     @Nullable
-    public Node selectNext(WorkerLeaseRegistry.WorkerLease workerLease, ResourceLockState resourceLockState) {
+    public Node selectNext(ResourceLockState resourceLockState) {
         if (allProjectsLocked()) {
             // TODO - this is incorrect. We can still run nodes that don't need a project lock
             return null;
         }
 
-        for (Iterator<Node> iterator = dependenciesWhichRequireMonitoring.iterator(); iterator.hasNext();) {
+        for (Iterator<Node> iterator = dependenciesWhichRequireMonitoring.iterator(); iterator.hasNext(); ) {
             Node node = iterator.next();
             if (node.isComplete()) {
                 LOGGER.debug("Monitored node {} completed", node);
@@ -634,12 +634,6 @@ public class DefaultExecutionPlan implements ExecutionPlan {
             Node node = iterator.next();
             if (node.isReady() && node.allDependenciesComplete()) {
                 foundReadyNode = true;
-
-                if (!tryAcquireWorkerLeaseForNode(node, workerLease)) {
-                    resourceLockState.releaseLocks();
-                    // if we can't get a worker lease, we won't be able to execute any other nodes, either
-                    break;
-                }
 
                 if (!tryAcquireLocksForNode(node)) {
                     resourceLockState.releaseLocks();
