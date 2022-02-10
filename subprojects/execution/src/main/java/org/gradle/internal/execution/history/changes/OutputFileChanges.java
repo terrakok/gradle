@@ -16,12 +16,16 @@
 
 package org.gradle.internal.execution.history.changes;
 
-import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Interner;
+import org.gradle.internal.file.FileType;
+import org.gradle.internal.fingerprint.CurrentFileCollectionFingerprint;
+import org.gradle.internal.fingerprint.DirectorySensitivity;
+import org.gradle.internal.fingerprint.impl.DefaultCurrentFileCollectionFingerprint;
+import org.gradle.internal.fingerprint.impl.RelativePathFingerprintingStrategy;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
 import org.gradle.internal.snapshot.FileSystemSnapshot;
 import org.gradle.internal.snapshot.MissingFileSnapshot;
 import org.gradle.internal.snapshot.RootTrackingFileSystemSnapshotHierarchyVisitor;
-import org.gradle.internal.snapshot.SnapshotUtil;
 import org.gradle.internal.snapshot.SnapshotVisitResult;
 
 import java.util.LinkedHashMap;
@@ -30,48 +34,7 @@ import java.util.SortedMap;
 
 public class OutputFileChanges implements ChangeContainer {
 
-    private static final CompareStrategy.ChangeFactory<FileSystemLocationSnapshot> SNAPSHOT_CHANGE_FACTORY = new CompareStrategy.ChangeFactory<FileSystemLocationSnapshot>() {
-        @Override
-        public Change added(String path, String propertyTitle, FileSystemLocationSnapshot current) {
-            return new DescriptiveChange("Output property '%s' file %s has been added.", propertyTitle, path);
-        }
-
-        @Override
-        public Change removed(String path, String propertyTitle, FileSystemLocationSnapshot previous) {
-            return new DescriptiveChange("Output property '%s' file %s has been removed.", propertyTitle, path);
-        }
-
-        @Override
-        public Change modified(String path, String propertyTitle, FileSystemLocationSnapshot previous, FileSystemLocationSnapshot current) {
-            return new DescriptiveChange("Output property '%s' file %s has changed.", propertyTitle, path);
-        }
-    };
-
-    private static final TrivialChangeDetector.ItemComparator<FileSystemLocationSnapshot> SNAPSHOT_COMPARATOR = new TrivialChangeDetector.ItemComparator<FileSystemLocationSnapshot>() {
-        @Override
-        public boolean hasSamePath(FileSystemLocationSnapshot previous, FileSystemLocationSnapshot current) {
-            return previous.getAbsolutePath().equals(current.getAbsolutePath());
-        }
-
-        @Override
-        public boolean hasSameContent(FileSystemLocationSnapshot previous, FileSystemLocationSnapshot current) {
-            return previous.isContentUpToDate(current);
-        }
-    };
-
-    @VisibleForTesting
-    static final CompareStrategy<FileSystemSnapshot, FileSystemLocationSnapshot> COMPARE_STRATEGY = new CompareStrategy<>(
-        OutputFileChanges::index,
-        SnapshotUtil::getRootHashes,
-        new TrivialChangeDetector<>(
-            SNAPSHOT_COMPARATOR,
-            SNAPSHOT_CHANGE_FACTORY,
-            new AbsolutePathChangeDetector<>(
-                FileSystemLocationSnapshot::isContentUpToDate,
-                SNAPSHOT_CHANGE_FACTORY
-            )
-        )
-    );
+    private static final Interner<String> NOOP_STRING_INTERNER = sample -> sample;
 
     private final SortedMap<String, FileSystemSnapshot> previous;
     private final SortedMap<String, FileSystemSnapshot> current;
@@ -96,7 +59,27 @@ public class OutputFileChanges implements ChangeContainer {
 
             @Override
             public boolean updated(String property, FileSystemSnapshot previous, FileSystemSnapshot current) {
-                return COMPARE_STRATEGY.visitChangesSince(previous, current, property, visitor);
+                if (previous == current) {
+                    return true;
+                }
+                if (previous instanceof FileSystemLocationSnapshot && current instanceof FileSystemLocationSnapshot) {
+                    FileSystemLocationSnapshot previousLocationSnapshot = (FileSystemLocationSnapshot) previous;
+                    FileSystemLocationSnapshot currentLocationSnapshot = (FileSystemLocationSnapshot) current;
+                    if (previousLocationSnapshot.getHash().equals(currentLocationSnapshot.getHash())) {
+                        // As with relative path, we compare the name of the roots if they are regular files.
+                        if (previousLocationSnapshot.getType() != FileType.RegularFile
+                            || previousLocationSnapshot.getName().equals(currentLocationSnapshot.getName())) {
+                            return true;
+                        }
+                    }
+                }
+                RelativePathFingerprintingStrategy relativePathFingerprintingStrategy = new RelativePathFingerprintingStrategy(NOOP_STRING_INTERNER, DirectorySensitivity.DEFAULT);
+                CurrentFileCollectionFingerprint previousFingerprint = DefaultCurrentFileCollectionFingerprint.from(previous, relativePathFingerprintingStrategy, null);
+                CurrentFileCollectionFingerprint currentFingerprint = DefaultCurrentFileCollectionFingerprint.from(current, relativePathFingerprintingStrategy, null);
+                return NormalizedPathFingerprintCompareStrategy.INSTANCE.visitChangesSince(previousFingerprint,
+                    currentFingerprint,
+                    "Output property '" + property + "'",
+                    visitor);
             }
         });
     }
