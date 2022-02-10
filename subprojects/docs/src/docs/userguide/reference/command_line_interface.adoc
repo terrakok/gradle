@@ -162,11 +162,11 @@ include::{snippetsPath}/tutorial/nameMatching/tests/nameMatching.out[]
 
 You can also use these abbreviations with the `-x` command-line option.
 
-=== Inspecting abbreviation resolution
+=== Tracing name expansion
 
-For complex projects, it might not be obvious if the correct task was executed. When using abbreviated tasks, a single typo can easily change which task is running.
+For complex projects, it might not be obvious if the correct tasks were executed. When using abbreviated names, a single typo can lead to the execution of different tasks.
 
-When INFO, or <<logging.adoc#logLevels, more verbose logging is enabled>>, the logs will contain extra information about the project, and task resolution. For example, when executing the `mAL:cT` command on the previous example, the following log messages will be visible:
+When INFO, or <<logging.adoc#logLevels, more verbose logging is enabled>>, the output will contain extra information about the project and task name expansion. For example, when executing the `mAL:cT` command on the previous example, the following log messages will be visible:
 
 
 ----
