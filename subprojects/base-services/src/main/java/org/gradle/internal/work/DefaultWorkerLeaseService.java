@@ -178,10 +178,6 @@ public class DefaultWorkerLeaseService implements WorkerLeaseService, Stoppable 
         releaseLocks(taskLockRegistry.getResourceLocksByCurrentThread());
     }
 
-    public void releaseCurrentResourceLocks() {
-        releaseLocks(workerLeaseLockRegistry.getResourceLocksByCurrentThread());
-    }
-
     @Override
     public void runAsIsolatedTask(Runnable runnable) {
         runAsIsolatedTask(Factories.toFactory(runnable));
@@ -336,9 +332,21 @@ public class DefaultWorkerLeaseService implements WorkerLeaseService, Stoppable 
 
     @Override
     public WorkerLeaseCompletion startWorker() {
+        if (!workerLeaseLockRegistry.getResourceLocksByCurrentThread().isEmpty()) {
+            throw new IllegalStateException("Current thread is already a worker thread");
+        }
         DefaultWorkerLease lease = getWorkerLease();
         coordinationService.withStateLock(lock(lease));
         return lease;
+    }
+
+    @Override
+    public WorkerLeaseCompletion maybeStartWorker() {
+        List<DefaultWorkerLease> operations = workerLeaseLockRegistry.getResourceLocksByCurrentThread();
+        if (operations.isEmpty()) {
+            return startWorker();
+        }
+        return operations.get(0);
     }
 
     private void releaseWorkerLeaseAndWaitFor(Iterable<? extends ResourceLock> locks) {
