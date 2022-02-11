@@ -43,7 +43,6 @@ import org.gradle.internal.graph.DirectedGraphRenderer;
 import org.gradle.internal.logging.text.StyledTextOutput;
 import org.gradle.internal.reflect.validation.TypeValidationContext;
 import org.gradle.internal.resources.ResourceLock;
-import org.gradle.internal.resources.ResourceLockState;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.work.WorkerLeaseRegistry;
 import org.slf4j.Logger;
@@ -611,7 +610,7 @@ public class DefaultExecutionPlan implements ExecutionPlan {
 
     @Override
     @Nullable
-    public Node selectNext(ResourceLockState resourceLockState) {
+    public Node selectNext() {
         if (allProjectsLocked()) {
             // TODO - this is incorrect. We can still run nodes that don't need a project lock
             return null;
@@ -628,6 +627,7 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         if (!maybeNodesReady) {
             return null;
         }
+        List<ResourceLock> resources = new ArrayList<>();
         Iterator<Node> iterator = executionQueue.iterator();
         boolean foundReadyNode = false;
         while (iterator.hasNext()) {
@@ -635,15 +635,15 @@ public class DefaultExecutionPlan implements ExecutionPlan {
             if (node.isReady() && node.allDependenciesComplete()) {
                 foundReadyNode = true;
 
-                if (!tryAcquireLocksForNode(node)) {
-                    resourceLockState.releaseLocks();
+                if (!tryAcquireLocksForNode(node, resources)) {
+                    releaseLocks(resources);
                     continue;
                 }
 
                 MutationInfo mutations = getResolvedMutationInfo(node);
 
                 if (conflictsWithOtherNodes(node, mutations)) {
-                    resourceLockState.releaseLocks();
+                    releaseLocks(resources);
                     continue;
                 }
 
@@ -664,11 +664,18 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         return null;
     }
 
-    private boolean tryAcquireLocksForNode(Node node) {
-        if (!tryLockProjectFor(node)) {
+    private void releaseLocks(List<ResourceLock> resources) {
+        for (ResourceLock resource : resources) {
+            resource.unlock();
+        }
+    }
+
+    private boolean tryAcquireLocksForNode(Node node, List<ResourceLock> resources) {
+        resources.clear();
+        if (!tryLockProjectFor(node, resources)) {
             LOGGER.debug("Cannot acquire project lock for node {}", node);
             return false;
-        } else if (!tryLockSharedResourceFor(node)) {
+        } else if (!tryLockSharedResourceFor(node, resources)) {
             LOGGER.debug("Cannot acquire shared resource lock for node {}", node);
             return false;
         }
@@ -701,12 +708,15 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         }
     }
 
-    private boolean tryLockProjectFor(Node node) {
+    private boolean tryLockProjectFor(Node node, List<ResourceLock> resources) {
         ResourceLock toLock = node.getProjectToLock();
-        if (toLock != null) {
-            return toLock.tryLock();
-        } else {
+        if (toLock == null) {
             return true;
+        } else if (toLock.tryLock()) {
+            resources.add(toLock);
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -717,8 +727,14 @@ public class DefaultExecutionPlan implements ExecutionPlan {
         }
     }
 
-    private boolean tryLockSharedResourceFor(Node node) {
-        return node.getResourcesToLock().stream().allMatch(ResourceLock::tryLock);
+    private boolean tryLockSharedResourceFor(Node node, List<ResourceLock> resources) {
+        for (ResourceLock resource : node.getResourcesToLock()) {
+            if (!resource.tryLock()) {
+                return false;
+            }
+            resources.add(resource);
+        }
+        return true;
     }
 
     private void unlockSharedResourcesFor(Node node) {

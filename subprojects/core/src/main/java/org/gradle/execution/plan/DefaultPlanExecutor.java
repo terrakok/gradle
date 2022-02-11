@@ -196,7 +196,7 @@ public class DefaultPlanExecutor implements PlanExecutor {
                 }
 
                 try {
-                    selected.set(executionPlan.selectNext(resourceLockState));
+                    selected.set(executionPlan.selectNext());
                 } catch (Throwable t) {
                     resourceLockState.releaseLocks();
                     executionPlan.abortAllAndFail(t);

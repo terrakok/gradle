@@ -59,7 +59,7 @@ class DefaultPlanExecutorTest extends Specification {
         1 * executorFactory.create(_) >> Mock(ManagedExecutor)
         1 * cancellationHandler.isCancellationRequested() >> false
         1 * executionPlan.hasNodesRemaining() >> true
-        1 * executionPlan.selectNext(_, _) >> node
+        1 * executionPlan.selectNext() >> node
         1 * worker.execute(node)
 
         then:
@@ -87,7 +87,7 @@ class DefaultPlanExecutorTest extends Specification {
         1 * executorFactory.create(_) >> Mock(ManagedExecutor)
         1 * cancellationHandler.isCancellationRequested() >> false
         1 * executionPlan.hasNodesRemaining() >> true
-        1 * executionPlan.selectNext(_, _) >> node
+        1 * executionPlan.selectNext() >> node
         1 * worker.execute(node)
         1 * executionPlan.finishedExecuting(node)
 

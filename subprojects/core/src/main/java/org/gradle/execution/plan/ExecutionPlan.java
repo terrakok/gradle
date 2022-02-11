@@ -19,7 +19,6 @@ package org.gradle.execution.plan;
 import org.gradle.api.Describable;
 import org.gradle.api.Task;
 import org.gradle.api.specs.Spec;
-import org.gradle.internal.resources.ResourceLockState;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -44,7 +43,7 @@ public interface ExecutionPlan extends Describable {
 
         @Nullable
         @Override
-        public Node selectNext(ResourceLockState resourceLockState) {
+        public Node selectNext() {
             return null;
         }
 
@@ -143,7 +142,7 @@ public interface ExecutionPlan extends Describable {
      * Selects a work item to run, returns null if there is no work remaining _or_ if no queued work is ready to run.
      */
     @Nullable
-    Node selectNext(ResourceLockState resourceLockState);
+    Node selectNext();
 
     void finishedExecuting(Node node);
 
