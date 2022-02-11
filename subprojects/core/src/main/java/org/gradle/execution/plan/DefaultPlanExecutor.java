@@ -205,10 +205,7 @@ public class DefaultPlanExecutor implements PlanExecutor {
 
                 if (selected.get() == null) {
                     // Release worker lease while waiting
-                    if (workerLease.isLockedByCurrentThread()) {
-                        workerLease.unlock();
-                        coordinationService.notifyStateChange();
-                    }
+                    workerLease.unlock();
                     return RETRY;
                 } else {
                     return FINISHED;
