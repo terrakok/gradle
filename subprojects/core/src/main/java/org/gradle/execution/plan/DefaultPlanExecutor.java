@@ -190,7 +190,8 @@ public class DefaultPlanExecutor implements PlanExecutor {
                     return FINISHED;
                 }
 
-                if (!workerLease.tryLock()) {
+                boolean hasWorkerLease = workerLease.isLockedByCurrentThread();
+                if (!hasWorkerLease && !workerLease.tryLock()) {
                     // Cannot run work
                     return RETRY;
                 }
@@ -206,6 +207,12 @@ public class DefaultPlanExecutor implements PlanExecutor {
                 if (selected.get() == null) {
                     // Release worker lease while waiting
                     workerLease.unlock();
+                    if (hasWorkerLease) {
+                        // If this thread hold a worker lease at the start of this action, then signal other threads that are currently waiting for a worker lease
+                        // If this thread did not hold a worker lease, then this action has effectively done nothing, so don't signal other threads
+                        // TODO - coordinator should notify when retrying and a lock was unlocked by the action
+                        coordinationService.notifyStateChange();
+                    }
                     return RETRY;
                 } else {
                     return FINISHED;
