@@ -20,6 +20,9 @@ import org.gradle.api.attributes.Attribute;
 import org.gradle.api.internal.attributes.ImmutableAttributes;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 
 public interface AttributeSelectionSchema {
@@ -33,4 +36,30 @@ public interface AttributeSelectionSchema {
     Attribute<?> getAttribute(String name);
 
     Attribute<?>[] collectExtraAttributes(ImmutableAttributes[] candidates, ImmutableAttributes requested);
+
+    class PrecedenceResult {
+        private final List<Attribute<?>> attributes;
+        private final OptionalInt index;
+
+        public PrecedenceResult(List<Attribute<?>> attributes, int index) {
+            this.attributes = attributes;
+            this.index = OptionalInt.of(index);
+        }
+
+        public PrecedenceResult(List<Attribute<?>> attributes) {
+            this.attributes = attributes;
+            this.index = OptionalInt.empty();
+        }
+
+        public List<Attribute<?>> getAttributes() {
+            return attributes;
+        }
+
+        public OptionalInt getLastAttributeIndexWithKnownPrecedence() {
+            return index;
+        }
+    }
+    PrecedenceResult orderByPrecedence(ImmutableAttributes requested);
+
+    Collection<Attribute<?>> getDisambiguatingAttributes();
 }

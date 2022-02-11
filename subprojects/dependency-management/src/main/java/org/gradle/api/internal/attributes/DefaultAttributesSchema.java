@@ -17,8 +17,6 @@
 package org.gradle.api.internal.attributes;
 
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.gradle.api.Action;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.AttributeMatchingStrategy;
@@ -36,9 +34,13 @@ import org.gradle.internal.instantiation.InstantiatorFactory;
 import org.gradle.internal.isolation.IsolatableFactory;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,18 +48,19 @@ import java.util.Set;
 public class DefaultAttributesSchema implements AttributesSchemaInternal, AttributesSchema {
     private final ComponentAttributeMatcher componentAttributeMatcher;
     private final InstantiatorFactory instantiatorFactory;
-    private final Map<Attribute<?>, AttributeMatchingStrategy<?>> strategies = Maps.newHashMap();
-    private final Map<String, Attribute<?>> attributesByName = Maps.newHashMap();
+    private final Map<Attribute<?>, AttributeMatchingStrategy<?>> strategies = new HashMap<>();
+    private final Map<String, Attribute<?>> attributesByName = new HashMap<>();
 
     private final DefaultAttributeMatcher matcher;
     private final IsolatableFactory isolatableFactory;
-    private final Map<ExtraAttributesEntry, Attribute<?>[]> extraAttributesCache = Maps.newHashMap();
-    private final List<AttributeDescriber> consumerAttributeDescribers = Lists.newArrayList();
+    private final Map<ExtraAttributesEntry, Attribute<?>[]> extraAttributesCache = new HashMap<>();
+    private final List<AttributeDescriber> consumerAttributeDescribers = new ArrayList<>();
+    private final Set<Attribute<?>> precedence = new LinkedHashSet<>();
 
     public DefaultAttributesSchema(ComponentAttributeMatcher componentAttributeMatcher, InstantiatorFactory instantiatorFactory, IsolatableFactory isolatableFactory) {
         this.componentAttributeMatcher = componentAttributeMatcher;
         this.instantiatorFactory = instantiatorFactory;
-        matcher = new DefaultAttributeMatcher(componentAttributeMatcher, mergeWith(EmptySchema.INSTANCE));
+        this.matcher = new DefaultAttributeMatcher(componentAttributeMatcher, mergeWith(EmptySchema.INSTANCE));
         this.isolatableFactory = isolatableFactory;
     }
 
@@ -141,6 +144,26 @@ public class DefaultAttributesSchema implements AttributesSchemaInternal, Attrib
         consumerAttributeDescribers.add(describer);
     }
 
+    @Override
+    public void attributeDisambiguationPrecedence(Attribute<?>... attributes) {
+        for (Attribute<?> attribute : attributes) {
+            if (!precedence.add(attribute)) {
+                throw new IllegalArgumentException(String.format("Attribute '%s' precedence has already been set.", attribute.getName()));
+            }
+        }
+    }
+
+    @Override
+    public void setAttributeDisambiguationPrecedence(Collection<Attribute<?>> attributes) {
+        precedence.clear();
+        attributeDisambiguationPrecedence(attributes.toArray(new Attribute<?>[0]));
+    }
+
+    @Override
+    public Collection<Attribute<?>> getAttributeDisambiguationPrecedence() {
+        return Collections.unmodifiableCollection(precedence);
+    }
+
     private static class DefaultAttributeMatcher implements AttributeMatcher {
         private final ComponentAttributeMatcher componentAttributeMatcher;
         private final AttributeSelectionSchema effectiveSchema;
@@ -178,9 +201,29 @@ public class DefaultAttributesSchema implements AttributesSchemaInternal, Attrib
 
     private class MergedSchema implements AttributeSelectionSchema {
         private final AttributesSchemaInternal producerSchema;
-
+        private final Map<String, Attribute<?>> combinedPrecedence;
         MergedSchema(AttributesSchemaInternal producerSchema) {
+            assert producerSchema != null;
             this.producerSchema = producerSchema;
+
+            // When merging schemas precedences, we need to take care to eliminate duplicate attributes with the same name.
+            //
+            // e.g., If an attribute is defined in the consumer schema with a name of foo and a type of String
+            // and the attribute is defined in the producer schema with the name of foo and type of FooAttribute,
+            // these could appear to be two different attributes.
+            //
+            // Precedence order is determined by attribute name, so with these precedences:
+            // consumer = [ A:StrongType, B:StrongType ]
+            // producer = [ X:String, A:String ]
+            // We will get:
+            // combinedPrecedence = [ A:StrongType, B:StrongType, X:String ]
+            this.combinedPrecedence = new LinkedHashMap<>();
+            for (Attribute<?> attribute : precedence) {
+                combinedPrecedence.put(attribute.getName(), attribute);
+            }
+            for (Attribute<?> attribute : producerSchema.getAttributeDisambiguationPrecedence()) {
+                combinedPrecedence.putIfAbsent(attribute.getName(), attribute);
+            }
         }
 
         @Override
@@ -290,6 +333,41 @@ public class DefaultAttributesSchema implements AttributesSchemaInternal, Attrib
             }
             MergedSchema that = (MergedSchema) o;
             return producerSchema.equals(that.producerSchema);
+        }
+
+        @Override
+        public PrecedenceResult orderByPrecedence(ImmutableAttributes requested) {
+            Map<String, Attribute<?>> remaining = new LinkedHashMap<>();
+            for (Attribute<?> attribute : requested.keySet()) {
+                remaining.put(attribute.getName(), attribute);
+            }
+            List<Attribute<?>> sorted = new ArrayList<>(remaining.size());
+
+            // Add all attributes that have a higher precedence in the order they appear
+            // in the precedence list
+            for (Attribute<?> preferredAttribute : getDisambiguatingAttributes()) {
+                Attribute<?> requestedAttribute = remaining.remove(preferredAttribute.getName());
+                if (requestedAttribute!=null) {
+                    sorted.add(requestedAttribute);
+                }
+            }
+            // If nothing was sorted, there were no appropriate disambiguating attributes to use
+            if (sorted.isEmpty()) {
+                sorted.addAll(remaining.values());
+                return new PrecedenceResult(sorted);
+            } else {
+                // sorted now contains any requested attribute in the order they appear in
+                // the combinedPrecedence set
+                // Add all remaining attributes in whatever order they came in
+                int index = sorted.size() - 1;
+                sorted.addAll(remaining.values());
+                return new PrecedenceResult(sorted, index);
+            }
+        }
+
+        @Override
+        public Collection<Attribute<?>> getDisambiguatingAttributes() {
+            return combinedPrecedence.values();
         }
 
         @Override
